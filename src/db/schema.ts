@@ -160,7 +160,11 @@ export const jobListings = pgTable(
     description: text("description").default("").notNull(),
     location: text("location").default("Singapore").notNull(),
     sector: sectorEnum("sector").notNull(),
-    passTrackRequired: passTrackEnum("pass_track_required").notNull(),
+    // Every work pass the job accepts, e.g. ["S Pass Eligible", "Work Permit"].
+    passTracksAccepted: passTrackEnum("pass_tracks_accepted")
+      .array()
+      .default([])
+      .notNull(),
     // Null when the poster just says "attractive salary package".
     salaryRangeMin: integer("salary_range_min"),
     salaryRangeMax: integer("salary_range_max"),
@@ -241,6 +245,19 @@ export const admins = pgTable("admins", {
   role: adminRoleEnum("role").notNull(),
 });
 
+/**
+ * Emails allowed to act as Pinnacle staff. A user who signs in with a verified
+ * address on this list is given the admin role.
+ */
+export const adminEmails = pgTable("admin_emails", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  addedBy: text("added_by"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const workersRelations = relations(workers, ({ many }) => ({
   introductions: many(introductions),
   passDocuments: many(passDocuments),
@@ -288,3 +305,4 @@ export type PassDocument = typeof passDocuments.$inferSelect;
 export type NewPassDocument = typeof passDocuments.$inferInsert;
 export type Admin = typeof admins.$inferSelect;
 export type NewAdmin = typeof admins.$inferInsert;
+export type AdminEmail = typeof adminEmails.$inferSelect;

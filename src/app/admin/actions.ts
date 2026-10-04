@@ -1,12 +1,26 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { db } from "@/db";
 import { isUuid } from "@/db/queries";
-import { employers, introductions, jobListings, workers } from "@/db/schema";
+import {
+  adminEmails,
+  employers,
+  introductions,
+  jobListings,
+  workers,
+} from "@/db/schema";
+import {
+  hasAdminEmail,
+  normalizeEmail,
+  verifiedEmailsOf,
+} from "@/lib/auth/admin-emails";
+import { isSignupRole } from "@/lib/auth/roles";
 import { parseJobForm } from "@/lib/jobs";
 import { JOB_STATUSES } from "@/lib/options";
 import { notifyStageChange } from "@/lib/notify";
@@ -205,4 +219,88 @@ export async function addToPipeline(formData: FormData) {
     .onConflictDoNothing();
 
   revalidateEverything();
+}
+
+const adminEmailSchema = z.string().trim().toLowerCase().email();
+
+async function clerkUsersWithEmail(email: string) {
+  const client = await clerkClient();
+  const { data } = await client.users.getUserList({ emailAddress: [email] });
+  // Only act on accounts that have actually verified this address.
+  return data.filter((u) =>
+    verifiedEmailsOf(u).map(normalizeEmail).includes(email),
+  );
+}
+
+export async function addAdminEmail(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const admin = await requireAdmin();
+  const parsed = adminEmailSchema.safeParse(formData.get("email") ?? "");
+  if (!parsed.success) {
+    return { fieldErrors: { email: "Enter a valid email address" } };
+  }
+  const email = parsed.data;
+
+  const inserted = await db
+    .insert(adminEmails)
+    .values({ email, addedBy: admin.name })
+    .onConflictDoNothing()
+    .returning({ id: adminEmails.id });
+  if (inserted.length === 0) {
+    return { message: `${email} is already an admin.` };
+  }
+
+  // Promote an existing account right away; new sign-ups get it at sign-in.
+  const users = await clerkUsersWithEmail(email);
+  const client = await clerkClient();
+  await Promise.all(
+    users.map((u) =>
+      client.users.updateUserMetadata(u.id, {
+        publicMetadata: { role: "admin" },
+      }),
+    ),
+  );
+
+  revalidatePath("/admin/team");
+  return {
+    ok: true,
+    message:
+      users.length > 0
+        ? `${email} is now an admin. They may need to sign out and back in.`
+        : `${email} added. They become an admin as soon as they sign up with this email.`,
+  };
+}
+
+export async function removeAdminEmail(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!isUuid(id)) return;
+
+  const row = await db.query.adminEmails.findFirst({
+    where: eq(adminEmails.id, id),
+  });
+  if (!row) return;
+
+  // Never lock everyone out, and don't let staff remove themselves.
+  const me = await currentUser();
+  const myEmails = me ? verifiedEmailsOf(me).map(normalizeEmail) : [];
+  const [{ total }] = await db.select({ total: count() }).from(adminEmails);
+  if (myEmails.includes(row.email) || total <= 1) return;
+
+  await db.delete(adminEmails).where(eq(adminEmails.id, id));
+
+  const client = await clerkClient();
+  for (const user of await clerkUsersWithEmail(row.email)) {
+    if (user.publicMetadata?.role !== "admin") continue;
+    if (await hasAdminEmail(verifiedEmailsOf(user))) continue;
+    // Fall back to the role they chose at sign-up, if any.
+    const signupRole = user.unsafeMetadata?.role;
+    await client.users.updateUserMetadata(user.id, {
+      publicMetadata: { role: isSignupRole(signupRole) ? signupRole : null },
+    });
+  }
+
+  revalidatePath("/admin/team");
 }

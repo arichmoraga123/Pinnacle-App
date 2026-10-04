@@ -19,7 +19,12 @@ import {
 import { db } from "@/db";
 import { isUuid } from "@/db/queries";
 import { introductions, jobListings, workers } from "@/db/schema";
-import { formatDate, formatSalary, workerFileUrl } from "@/lib/format";
+import {
+  formatDate,
+  formatPasses,
+  formatSalary,
+  workerFileUrl,
+} from "@/lib/format";
 import { REVEALED_STAGES } from "@/lib/options";
 import { requireEmployer } from "@/lib/session";
 
@@ -82,7 +87,7 @@ export default async function EmployerJobPage({
               ["Urgency", <StatusBadge key="u" value={job.urgency} />],
               ["Salary", formatSalary(job)],
               ["Openings", job.headcount],
-              ["Work pass", job.passTrackRequired],
+              ["Work pass", formatPasses(job.passTracksAccepted)],
               ["Posted", formatDate(job.createdAt)],
             ]}
           />

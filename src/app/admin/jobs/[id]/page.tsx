@@ -21,6 +21,7 @@ import { db } from "@/db";
 import { isUuid } from "@/db/queries";
 import { employers, introductions, jobListings, workers } from "@/db/schema";
 import {
+  formatPasses,
   formatSalary,
   posterUrl,
   whatsappUrl,
@@ -126,7 +127,7 @@ export default async function AdminJobPage({
                 ["Status", <StatusBadge key="s" value={job.status} />],
                 ["Salary", formatSalary(job)],
                 ["Sector", job.sector],
-                ["Work pass", job.passTrackRequired],
+                ["Work pass", formatPasses(job.passTracksAccepted)],
                 ["Openings", job.headcount],
                 ["Location", job.location],
               ]}

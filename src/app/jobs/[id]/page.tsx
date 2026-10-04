@@ -18,7 +18,12 @@ import { applyToJob } from "@/app/worker/actions";
 import { db } from "@/db";
 import { getPublicJob } from "@/db/queries";
 import { introductions } from "@/db/schema";
-import { formatDate, formatSalary, posterUrl } from "@/lib/format";
+import {
+  formatDate,
+  formatPasses,
+  formatSalary,
+  posterUrl,
+} from "@/lib/format";
 import { isWorkerProfileComplete } from "@/lib/profile";
 import { getCurrentRole, requireWorker } from "@/lib/session";
 
@@ -144,7 +149,11 @@ export default async function JobDetailPage({
               <div className="flex flex-wrap gap-1.5">
                 {job.jobCode ? <Badge tone="amber">{job.jobCode}</Badge> : null}
                 <Badge>{job.sector}</Badge>
-                <Badge tone="teal">{job.passTrackRequired}</Badge>
+                {job.passTracksAccepted.map((p) => (
+                  <Badge key={p} tone="teal">
+                    {p}
+                  </Badge>
+                ))}
                 {job.urgency === "Urgent" ? (
                   <StatusBadge value="Urgent" />
                 ) : null}
@@ -179,7 +188,7 @@ export default async function JobDetailPage({
                 items={[
                   ["Salary", formatSalary(job)],
                   ["Openings", job.headcount],
-                  ["Work pass", job.passTrackRequired],
+                  ["Work pass", formatPasses(job.passTracksAccepted)],
                   ["Posted", formatDate(job.createdAt)],
                 ]}
               />

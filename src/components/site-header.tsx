@@ -25,6 +25,7 @@ const NAV: Record<
     { href: "/admin/jobs", label: "Jobs" },
     { href: "/admin/employers", label: "Employers" },
     { href: "/admin/workers", label: "Workers" },
+    { href: "/admin/team", label: "Team" },
   ],
 };
 

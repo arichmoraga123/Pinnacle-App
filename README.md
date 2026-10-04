@@ -61,16 +61,17 @@ Interview → Offer → Placed` (or `Declined`). Employers only see a worker's n
 and contact details from **Introduced** onwards. Marking an introduction
 **Placed** marks the worker as placed.
 
-### Making someone an admin
+### Admins
 
-Admins can't sign themselves up. Have the person create an account at
-`/sign-up` (either role works), then run:
+Staff access comes from the admin email list. You manage it at
+**Admin → Team**, and `a.rich.moraga@gmail.com` is on it from the first
+migration. Anyone who signs up or signs in with a **verified** email on the
+list becomes an admin automatically. Adding someone who already has an account
+promotes them immediately. Removing them gives them back the role they chose at
+sign-up. You can't remove yourself or the last admin.
 
-```bash
-npm run make-admin -- their@email.com
-```
-
-They sign out and back in, and they land on `/admin/pipeline`.
+From the command line, `npm run make-admin -- their@email.com` does the same
+thing.
 
 ## Stack
 

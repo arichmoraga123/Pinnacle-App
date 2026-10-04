@@ -22,7 +22,7 @@ type MatchWorker = {
 type MatchJob = {
   roleTitle: string;
   sector: string;
-  passTrackRequired: string;
+  passTracksAccepted: readonly string[];
   description?: string | null;
 };
 
@@ -85,7 +85,9 @@ export function scoreMatch(worker: MatchWorker, job: MatchJob): Match {
   let score = 0;
 
   // Eligibility first: local-only roles need a Singaporean / PR.
-  if (job.passTrackRequired === LOCAL && worker.passTrack !== LOCAL) {
+  const accepted = job.passTracksAccepted;
+  const foreignOk = accepted.some((p) => p !== LOCAL);
+  if (worker.passTrack !== LOCAL && !foreignOk) {
     return {
       score: 0,
       eligible: false,
@@ -118,20 +120,17 @@ export function scoreMatch(worker: MatchWorker, job: MatchJob): Match {
     reasons.push(`Same sector (${job.sector})`);
   }
 
+  // Lowest-ranked foreign pass the job accepts: higher passes also qualify.
+  const minRank = Math.min(...accepted.map((p) => PASS_RANK[p] ?? Infinity));
   if (worker.passTrack === LOCAL) {
     score += 25;
     reasons.push("Singaporean / PR — no work pass needed");
-  } else if (worker.passTrack === job.passTrackRequired) {
+  } else if (accepted.includes(worker.passTrack)) {
     score += 25;
-    reasons.push(`${job.passTrackRequired} ✓`);
-  } else if (
-    (PASS_RANK[worker.passTrack] ?? 0) >
-    (PASS_RANK[job.passTrackRequired] ?? 99)
-  ) {
+    reasons.push(`${worker.passTrack} ✓`);
+  } else if ((PASS_RANK[worker.passTrack] ?? 0) > minRank) {
     score += 15;
-    reasons.push(
-      `${worker.passTrack} (qualifies for ${job.passTrackRequired})`,
-    );
+    reasons.push(`${worker.passTrack} (role accepts ${accepted.join(" / ")})`);
   } else if (worker.passTrack === "In Verification") {
     score += 8;
     reasons.push("Pass type still being verified");

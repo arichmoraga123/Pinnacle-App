@@ -6,6 +6,7 @@ import { useFormState } from "react-dom";
 import {
   Field,
   FormMessage,
+  MultiSelect,
   Select,
   SubmitButton,
   TextArea,
@@ -111,17 +112,16 @@ export function JobForm({
           />
         </Field>
         <Field
-          label="Pass type"
-          name="passTrackRequired"
-          error={err.passTrackRequired}
-          hint="The work pass this role will be hired under."
+          label="Work passes accepted"
+          name="passTracksAccepted"
+          error={err.passTracksAccepted}
+          hint="Tick every pass this role can be hired under."
         >
-          <Select
-            name="passTrackRequired"
-            defaultValue={job?.passTrackRequired ?? ""}
-            placeholder="Select…"
+          <MultiSelect
+            name="passTracksAccepted"
             options={options.passTracks}
-            required
+            defaultValue={job?.passTracksAccepted ?? []}
+            placeholder="Select passes…"
           />
         </Field>
       </div>

@@ -12,7 +12,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { applicantCounts, listAllJobs } from "@/db/queries";
-import { formatDate, formatSalary } from "@/lib/format";
+import { formatDate, formatPasses, formatSalary } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata: Metadata = { title: "All jobs" };
@@ -72,8 +72,8 @@ export default async function AdminJobsPage({
                         <p className="text-xs text-graphite/70">
                           {job.jobCode ? `${job.jobCode} · ` : ""}
                           {job.posterKey ? "Poster · " : ""}
-                          {job.sector} · {job.passTrackRequired} ·{" "}
-                          {formatDate(job.createdAt)}
+                          {job.sector} · {formatPasses(job.passTracksAccepted)}{" "}
+                          · {formatDate(job.createdAt)}
                         </p>
                       </td>
                       <td className="px-4 py-3">{companyName}</td>

@@ -59,7 +59,10 @@ export const jobListingSchema = z
     description: z.string().trim().max(5000, "Description is too long"),
     location: trimmed(2, 120, "Location"),
     sector: z.enum(SECTORS, { error: "Choose a sector" }),
-    passTrackRequired: z.enum(PASS_TRACKS, { error: "Choose a pass type" }),
+    passTracksAccepted: z
+      .array(z.enum(PASS_TRACKS))
+      .min(1, "Choose at least one work pass")
+      .transform((list) => Array.from(new Set(list))),
     salaryRangeMin: optionalInt("Minimum salary", 0, 1_000_000),
     salaryRangeMax: optionalInt("Maximum salary", 0, 1_000_000),
     currency: z.enum(CURRENCIES),

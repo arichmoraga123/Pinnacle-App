@@ -6,6 +6,10 @@ import { type NextRequest } from "next/server";
 import { db } from "@/db";
 import { admins, employers, workers } from "@/db/schema";
 import { isSignupRole, isUserRole, type UserRole } from "@/lib/auth/roles";
+import {
+  hasAdminEmail,
+  verifiedEmailsOfPayload,
+} from "@/lib/auth/admin-emails";
 import { initialsFromName } from "@/lib/format";
 import {
   PENDING_COMPANY,
@@ -25,11 +29,18 @@ function displayName(data: {
   return name || data.username || "New User";
 }
 
-function resolveRole(data: {
+async function resolveRole(data: {
   public_metadata: Record<string, unknown> | null;
   unsafe_metadata: Record<string, unknown> | null;
-}): UserRole | null {
-  // Admins are provisioned manually with publicMetadata.role already set.
+  email_addresses: Array<{
+    email_address: string;
+    verification: { status: string } | null;
+  }>;
+}): Promise<UserRole | null> {
+  // Staff: a verified email on the admin list (managed at /admin/team).
+  if (await hasAdminEmail(verifiedEmailsOfPayload(data))) return "admin";
+
+  // Admins can also be provisioned with publicMetadata.role already set.
   const publicRole = data.public_metadata?.role;
   if (isUserRole(publicRole)) return publicRole;
 
@@ -113,7 +124,7 @@ export async function POST(req: NextRequest) {
     const evt = await verifyWebhook(req);
 
     if (evt.type === "user.created") {
-      const role = resolveRole(evt.data);
+      const role = await resolveRole(evt.data);
 
       if (!role) {
         console.warn(

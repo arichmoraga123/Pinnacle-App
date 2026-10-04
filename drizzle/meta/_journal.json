@@ -22,6 +22,20 @@
       "when": 1791154296234,
       "tag": "0002_charming_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791156188166,
+      "tag": "0003_stormy_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791156193639,
+      "tag": "0004_massive_invaders",
+      "breakpoints": true
     }
   ]
 }

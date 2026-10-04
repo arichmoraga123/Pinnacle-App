@@ -1,0 +1,1 @@
+ALTER TABLE "job_listings" DROP COLUMN "pass_track_required";

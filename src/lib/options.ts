@@ -37,6 +37,11 @@ export const OPEN_STAGES: readonly IntroductionStage[] = [
   "Offer",
 ];
 
+/** Pass types a job can accept ("In Verification" only describes workers). */
+export const JOB_PASS_TRACKS = PASS_TRACKS.filter(
+  (p) => p !== "In Verification",
+);
+
 export const CURRENCIES = ["SGD", "USD", "MYR"] as const;
 
 export const COUNTRIES: ReadonlyArray<{ code: string; name: string }> = [

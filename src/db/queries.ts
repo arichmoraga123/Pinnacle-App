@@ -1,6 +1,16 @@
 import "server-only";
 
-import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import { db } from "@/db";
 import { employers, introductions, jobListings, workers } from "@/db/schema";
@@ -31,7 +41,9 @@ function jobFilterConditions(filters: JobFilters): SQL[] {
     (PASS_TRACKS as readonly string[]).includes(filters.passTrack)
   ) {
     conditions.push(
-      eq(jobListings.passTrackRequired, filters.passTrack as PassTrack),
+      arrayContains(jobListings.passTracksAccepted, [
+        filters.passTrack as PassTrack,
+      ]),
     );
   }
   const q = filters.q?.trim();
@@ -61,7 +73,7 @@ const publicJobColumns = {
   description: jobListings.description,
   location: jobListings.location,
   sector: jobListings.sector,
-  passTrackRequired: jobListings.passTrackRequired,
+  passTracksAccepted: jobListings.passTracksAccepted,
   salaryRangeMin: jobListings.salaryRangeMin,
   salaryRangeMax: jobListings.salaryRangeMax,
   currency: jobListings.currency,

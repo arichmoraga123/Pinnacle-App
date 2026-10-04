@@ -10,7 +10,8 @@ declare global {
   }
 
   interface UserPublicMetadata {
-    role?: UserRole;
+    // null clears the role (Clerk removes keys set to null).
+    role?: UserRole | null;
   }
 
   interface UserUnsafeMetadata {

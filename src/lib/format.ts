@@ -24,6 +24,10 @@ export function formatSalary(listing: {
   return "Attractive salary package";
 }
 
+export function formatPasses(passes: readonly string[]) {
+  return passes.length ? passes.join(" / ") : "—";
+}
+
 export function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-SG", {
     day: "numeric",

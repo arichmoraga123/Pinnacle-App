@@ -64,7 +64,11 @@ export function JobCard({
             {formatSalary(job)}
           </span>
           <Badge>{job.sector}</Badge>
-          <Badge tone="teal">{job.passTrackRequired}</Badge>
+          {job.passTracksAccepted.map((p) => (
+            <Badge key={p} tone="teal">
+              {p}
+            </Badge>
+          ))}
         </div>
         <span className="mt-auto pt-1 text-sm font-semibold text-teal">
           Apply now →
