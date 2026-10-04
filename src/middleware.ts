@@ -6,6 +6,8 @@ import { getRoleHome, isUserRole } from "@/lib/auth/roles";
 const isPublicRoute = createRouteMatcher([
   "/",
   "/jobs(.*)",
+  "/j/(.*)",
+  "/files/posters/(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",

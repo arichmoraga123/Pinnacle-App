@@ -6,12 +6,22 @@ export function initialsFromName(fullName: string) {
 }
 
 export function formatSalary(listing: {
-  salaryRangeMin: number;
-  salaryRangeMax: number;
+  salaryRangeMin: number | null;
+  salaryRangeMax: number | null;
   currency: string;
 }) {
   const fmt = new Intl.NumberFormat("en-SG");
-  return `${listing.currency} ${fmt.format(listing.salaryRangeMin)}–${fmt.format(listing.salaryRangeMax)} / mo`;
+  const { salaryRangeMin: min, salaryRangeMax: max, currency } = listing;
+  if (min != null && max != null && min !== max) {
+    return `${currency} ${fmt.format(min)}–${fmt.format(max)} / mo`;
+  }
+  if (min != null && (max == null || max === min)) {
+    return max === min
+      ? `${currency} ${fmt.format(min)} / mo`
+      : `From ${currency} ${fmt.format(min)} / mo`;
+  }
+  if (max != null) return `Up to ${currency} ${fmt.format(max)} / mo`;
+  return "Attractive salary package";
 }
 
 export function formatDate(date: Date) {
@@ -28,4 +38,20 @@ export function formatMoney(amount: string | null, currency = "SGD") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(amount))}`;
+}
+
+export function posterUrl(posterKey: string) {
+  return `/files/${posterKey}`;
+}
+
+export function workerFileUrl(workerId: string, kind: "resume" | "photo") {
+  return `/files/workers/${workerId}/${kind}`;
+}
+
+/** wa.me click-to-chat link, or null when the number is unusable. */
+export function whatsappUrl(phone: string | null, text?: string) {
+  const digits = phone?.replace(/\D/g, "") ?? "";
+  if (digits.length < 8) return null;
+  const query = text ? `?text=${encodeURIComponent(text)}` : "";
+  return `https://wa.me/${digits}${query}`;
 }

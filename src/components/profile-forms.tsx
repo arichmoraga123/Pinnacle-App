@@ -4,6 +4,11 @@ import { useEffect, useRef } from "react";
 import { useFormState } from "react-dom";
 
 import {
+  FileField,
+  PHOTO_ACCEPT,
+  RESUME_ACCEPT,
+} from "@/components/file-input";
+import {
   Field,
   FormMessage,
   Select,
@@ -12,6 +17,7 @@ import {
   TextInput,
 } from "@/components/form";
 import type { Employer, Worker } from "@/db/schema";
+import { workerFileUrl } from "@/lib/format";
 import type { FormState } from "@/lib/validation";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
@@ -133,6 +139,26 @@ export function WorkerProfileForm({
       >
         <TextArea name="summary" rows={5} defaultValue={worker.summary ?? ""} />
       </Field>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FileField
+          label="Resume / CV"
+          name="resume"
+          accept={RESUME_ACCEPT}
+          hasExisting={Boolean(worker.resumeKey)}
+          existingHref={workerFileUrl(worker.id, "resume")}
+          error={err.resume}
+          hint="PDF, Word or a photo of it. Max 4 MB."
+        />
+        <FileField
+          label="Recent photo"
+          name="photo"
+          accept={PHOTO_ACCEPT}
+          hasExisting={Boolean(worker.photoKey)}
+          existingHref={workerFileUrl(worker.id, "photo")}
+          error={err.photo}
+          hint="A clear, recent photo. Max 4 MB."
+        />
+      </div>
       <FormMessage state={state} />
       <div>
         <SubmitButton>Save profile</SubmitButton>

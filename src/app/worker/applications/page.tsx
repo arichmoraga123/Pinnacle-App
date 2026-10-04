@@ -82,7 +82,9 @@ export default async function WorkerApplicationsPage() {
                 <p className="mt-3 text-sm text-graphite">
                   {intro.initiatedBy === "employer"
                     ? "An employer asked Pinnacle to introduce you for this role. "
-                    : null}
+                    : intro.initiatedBy === "pinnacle"
+                      ? "Pinnacle put you forward for this role. "
+                      : null}
                   {STAGE_HELP[intro.stage]}
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-graphite/70">

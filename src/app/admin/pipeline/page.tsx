@@ -15,7 +15,13 @@ import {
 } from "@/components/ui";
 import { db } from "@/db";
 import { employers, introductions, jobListings, workers } from "@/db/schema";
-import { formatDate, formatMoney } from "@/lib/format";
+import {
+  formatDate,
+  formatMoney,
+  whatsappUrl,
+  workerFileUrl,
+} from "@/lib/format";
+import { matchLabel, scoreMatch } from "@/lib/matching";
 import {
   COMMISSION_STATUSES,
   INTRODUCTION_STAGES,
@@ -136,53 +142,111 @@ export default async function AdminPipelinePage({
           </EmptyState>
         ) : (
           <div className="grid gap-4">
-            {rows.map(({ intro, worker, job, companyName, contactEmail }) => (
-              <Card key={intro.id} className="grid gap-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="grid gap-1">
-                    <p className="font-display text-lg font-semibold">
-                      {worker.fullName}
-                      <span className="font-sans text-sm font-normal text-graphite">
-                        {" "}
-                        → {job.roleTitle} at {companyName}
-                      </span>
-                    </p>
-                    <p className="text-sm text-graphite">
-                      {worker.roleTitle} · {worker.yearsExperience} yrs ·{" "}
-                      {worker.originCountry} · {worker.email ?? "no email"} ·{" "}
-                      {worker.phone ?? "no phone"}
-                    </p>
-                    <p className="text-xs text-graphite/70">
-                      Employer contact: {contactEmail}
-                    </p>
+            {rows.map(({ intro, worker, job, companyName, contactEmail }) => {
+              const match = scoreMatch(worker, job);
+              const label = match.eligible ? matchLabel(match.score) : null;
+              const wa = whatsappUrl(
+                worker.phone,
+                `Hi ${worker.fullName.split(" ")[0]}, this is Pinnacle Recruitment about your application for ${job.roleTitle}${job.jobCode ? ` (${job.jobCode})` : ""}.`,
+              );
+              return (
+                <Card key={intro.id} className="grid gap-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="grid gap-1">
+                      <p className="font-display text-lg font-semibold">
+                        {worker.fullName}
+                        <span className="font-sans text-sm font-normal text-graphite">
+                          {" "}
+                          →{" "}
+                          <Link
+                            href={`/admin/jobs/${job.id}`}
+                            className="hover:text-teal hover:underline"
+                          >
+                            {job.roleTitle}
+                            {job.jobCode ? ` (${job.jobCode})` : ""}
+                          </Link>{" "}
+                          at {companyName}
+                        </span>
+                      </p>
+                      <p className="text-sm text-graphite">
+                        {worker.roleTitle} · {worker.yearsExperience} yrs ·{" "}
+                        {worker.originCountry} · {worker.email ?? "no email"} ·{" "}
+                        {worker.phone ?? "no phone"}
+                      </p>
+                      <p className="flex flex-wrap gap-x-3 text-sm">
+                        {wa ? (
+                          <a
+                            href={wa}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            WhatsApp worker
+                          </a>
+                        ) : null}
+                        {worker.resumeKey ? (
+                          <a
+                            href={workerFileUrl(worker.id, "resume")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Resume
+                          </a>
+                        ) : (
+                          <span className="text-graphite/50">No resume</span>
+                        )}
+                        {worker.photoKey ? (
+                          <a
+                            href={workerFileUrl(worker.id, "photo")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Photo
+                          </a>
+                        ) : (
+                          <span className="text-graphite/50">No photo</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-graphite/70">
+                        Employer contact: {contactEmail}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge>
+                        {intro.initiatedBy === "worker"
+                          ? "Worker applied"
+                          : intro.initiatedBy === "employer"
+                            ? "Employer requested"
+                            : "Put forward by Pinnacle"}
+                      </Badge>
+                      {label ? <Badge tone="teal">{label}</Badge> : null}
+                      {!match.eligible ? (
+                        <Badge tone="red">Not eligible</Badge>
+                      ) : null}
+                      <Badge tone="teal">{worker.passTrack}</Badge>
+                      <StageBadge stage={intro.stage} />
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge>
-                      {intro.initiatedBy === "worker"
-                        ? "Worker applied"
-                        : "Employer requested"}
-                    </Badge>
-                    <Badge tone="teal">{worker.passTrack}</Badge>
-                    <StageBadge stage={intro.stage} />
-                  </div>
-                </div>
-                {intro.applicantMessage ? (
-                  <blockquote className="border-l-2 border-amber pl-3 text-sm text-graphite">
-                    {intro.applicantMessage}
-                  </blockquote>
-                ) : null}
-                <IntroductionEditor
-                  action={updateIntroduction}
-                  introduction={intro}
-                  stages={INTRODUCTION_STAGES}
-                  commissionStatuses={COMMISSION_STATUSES}
-                />
-                <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/60">
-                  Created {formatDate(intro.createdAt)} · Updated{" "}
-                  {formatDate(intro.updatedAt)}
-                </p>
-              </Card>
-            ))}
+                  {intro.applicantMessage ? (
+                    <blockquote className="border-l-2 border-amber pl-3 text-sm text-graphite">
+                      {intro.applicantMessage}
+                    </blockquote>
+                  ) : null}
+                  <IntroductionEditor
+                    action={updateIntroduction}
+                    introduction={intro}
+                    stages={INTRODUCTION_STAGES}
+                    commissionStatuses={COMMISSION_STATUSES}
+                  />
+                  <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/60">
+                    Created {formatDate(intro.createdAt)} · Updated{" "}
+                    {formatDate(intro.updatedAt)}
+                  </p>
+                </Card>
+              );
+            })}
           </div>
         )}
       </Container>

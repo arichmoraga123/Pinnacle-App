@@ -1,6 +1,13 @@
 import { SignIn } from "@clerk/nextjs";
 
-export default function SignInPage() {
+import { afterAuthUrl } from "@/lib/auth/roles";
+
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { next?: string };
+}) {
+  const redirectUrl = afterAuthUrl(searchParams.next);
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-paper px-4 py-12">
       <div className="text-center">
@@ -12,8 +19,8 @@ export default function SignInPage() {
         </h1>
       </div>
       <SignIn
-        forceRedirectUrl="/after-auth"
-        fallbackRedirectUrl="/after-auth"
+        forceRedirectUrl={redirectUrl}
+        fallbackRedirectUrl={redirectUrl}
         signUpUrl="/sign-up"
       />
     </main>

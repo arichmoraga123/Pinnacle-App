@@ -39,24 +39,44 @@ const intField = (label: string, min: number, max: number) =>
     .min(min, `${label} must be at least ${min}`)
     .max(max, `${label} must be at most ${max}`);
 
+const optionalInt = (label: string, min: number, max: number) =>
+  z.preprocess(
+    (v) => (v == null || (typeof v === "string" && v.trim() === "") ? null : v),
+    intField(label, min, max).nullable(),
+  );
+
 export const jobListingSchema = z
   .object({
     roleTitle: trimmed(2, 120, "Role title"),
+    jobCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .max(20, "Job code is too long")
+      .regex(/^[A-Z0-9-]*$/, "Letters, numbers and dashes only")
+      .transform((v) => (v === "" ? null : v))
+      .optional(),
     description: z.string().trim().max(5000, "Description is too long"),
     location: trimmed(2, 120, "Location"),
     sector: z.enum(SECTORS, { error: "Choose a sector" }),
     passTrackRequired: z.enum(PASS_TRACKS, { error: "Choose a pass type" }),
-    salaryRangeMin: intField("Minimum salary", 0, 1_000_000),
-    salaryRangeMax: intField("Maximum salary", 0, 1_000_000),
+    salaryRangeMin: optionalInt("Minimum salary", 0, 1_000_000),
+    salaryRangeMax: optionalInt("Maximum salary", 0, 1_000_000),
     currency: z.enum(CURRENCIES),
     headcount: intField("Headcount", 1, 1000),
     urgency: z.enum(JOB_URGENCIES),
     status: z.enum(JOB_STATUSES),
   })
-  .refine((v) => v.salaryRangeMax >= v.salaryRangeMin, {
-    path: ["salaryRangeMax"],
-    message: "Maximum must be at least the minimum",
-  });
+  .refine(
+    (v) =>
+      v.salaryRangeMin == null ||
+      v.salaryRangeMax == null ||
+      v.salaryRangeMax >= v.salaryRangeMin,
+    {
+      path: ["salaryRangeMax"],
+      message: "Maximum must be at least the minimum",
+    },
+  );
 
 export const workerProfileSchema = z.object({
   fullName: trimmed(2, 120, "Full name"),

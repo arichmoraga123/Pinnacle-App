@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 
 import {
@@ -11,6 +12,7 @@ import {
   TextInput,
 } from "@/components/form";
 import type { JobListing } from "@/db/schema";
+import { posterUrl } from "@/lib/format";
 import type { FormState } from "@/lib/validation";
 
 export type JobFormOptions = {
@@ -31,7 +33,10 @@ export function JobForm({
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   job?: JobListing;
   options: JobFormOptions;
-  /** Admin only: choose which client company the job belongs to. */
+  /**
+   * Admin only: choose which client company the job belongs to, and show the
+   * job code and poster fields.
+   */
   employers?: Array<{ id: string; companyName: string }>;
   submitLabel: string;
 }) {
@@ -43,18 +48,40 @@ export function JobForm({
       {job ? <input type="hidden" name="id" value={job.id} /> : null}
 
       {employers ? (
-        <Field label="Client company" name="employerId" error={err.employerId}>
-          <Select
-            name="employerId"
-            defaultValue={job?.employerId ?? ""}
-            placeholder="Select a company…"
-            options={employers.map((e) => ({
-              value: e.id,
-              label: e.companyName,
-            }))}
-            required
-          />
-        </Field>
+        <>
+          <PosterField job={job} error={err.poster} />
+          <div className="grid gap-5 sm:grid-cols-[1fr_200px]">
+            <Field
+              label="Client company"
+              name="employerId"
+              error={err.employerId}
+            >
+              <Select
+                name="employerId"
+                defaultValue={job?.employerId ?? ""}
+                placeholder="Select a company…"
+                options={employers.map((e) => ({
+                  value: e.id,
+                  label: e.companyName,
+                }))}
+                required
+              />
+            </Field>
+            <Field
+              label="Job code"
+              name="jobCode"
+              error={err.jobCode}
+              hint="As on the poster, e.g. PS0015"
+            >
+              <TextInput
+                name="jobCode"
+                defaultValue={job?.jobCode ?? ""}
+                placeholder="PS0015"
+                className="uppercase"
+              />
+            </Field>
+          </div>
+        </>
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -124,14 +151,14 @@ export function JobForm({
         <Field
           label="Salary min / month"
           name="salaryRangeMin"
+          hint="Leave blank for “attractive package”"
           error={err.salaryRangeMin}
         >
           <TextInput
             name="salaryRangeMin"
             type="number"
             min={0}
-            defaultValue={job?.salaryRangeMin}
-            required
+            defaultValue={job?.salaryRangeMin ?? ""}
           />
         </Field>
         <Field
@@ -143,8 +170,7 @@ export function JobForm({
             name="salaryRangeMax"
             type="number"
             min={0}
-            defaultValue={job?.salaryRangeMax}
-            required
+            defaultValue={job?.salaryRangeMax ?? ""}
           />
         </Field>
         <Field label="Openings" name="headcount" error={err.headcount}>
@@ -185,5 +211,69 @@ export function JobForm({
         <SubmitButton>{submitLabel}</SubmitButton>
       </div>
     </form>
+  );
+}
+
+function PosterField({ job, error }: { job?: JobListing; error?: string }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [remove, setRemove] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  const current = job?.posterKey && !remove ? posterUrl(job.posterKey) : null;
+  const shown = preview ?? current;
+
+  return (
+    <Field
+      label="Poster image"
+      name="poster"
+      error={error}
+      hint="JPG, PNG or WebP up to 4 MB. Shown on the job board; clicking it opens the application."
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="grid aspect-[4/5] w-40 shrink-0 place-items-center overflow-hidden rounded-md border border-dashed border-ink/20 bg-paper">
+          {shown ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={shown}
+              alt="Poster preview"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <span className="px-3 text-center text-xs text-graphite/60">
+              No poster
+            </span>
+          )}
+        </div>
+        <div className="grid gap-2">
+          <input
+            id="poster"
+            name="poster"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setPreview(file ? URL.createObjectURL(file) : null);
+            }}
+            className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-graphite"
+          />
+          {job?.posterKey ? (
+            <label className="flex items-center gap-2 text-sm text-graphite">
+              <input
+                type="checkbox"
+                name="removePoster"
+                checked={remove}
+                onChange={(e) => setRemove(e.target.checked)}
+              />
+              Remove current poster
+            </label>
+          ) : null}
+        </div>
+      </div>
+    </Field>
   );
 }

@@ -18,7 +18,7 @@ import { applyToJob } from "@/app/worker/actions";
 import { db } from "@/db";
 import { getPublicJob } from "@/db/queries";
 import { introductions } from "@/db/schema";
-import { formatDate, formatSalary } from "@/lib/format";
+import { formatDate, formatSalary, posterUrl } from "@/lib/format";
 import { isWorkerProfileComplete } from "@/lib/profile";
 import { getCurrentRole, requireWorker } from "@/lib/session";
 
@@ -35,6 +35,7 @@ export async function generateMetadata({
 
 async function ApplyPanel({ jobId }: { jobId: string }) {
   const role = await getCurrentRole();
+  const next = encodeURIComponent(`/jobs/${jobId}#apply`);
 
   if (!role) {
     return (
@@ -42,12 +43,15 @@ async function ApplyPanel({ jobId }: { jobId: string }) {
         <p className="text-sm text-graphite">
           Create a free worker profile to apply. It only takes a few minutes.
         </p>
-        <ButtonLink href={`/sign-up?role=worker`} variant="accent">
+        <ButtonLink href={`/sign-up?role=worker&next=${next}`} variant="accent">
           Sign up to apply
         </ButtonLink>
         <p className="text-xs text-graphite">
           Already registered?{" "}
-          <Link href="/sign-in" className="text-teal hover:underline">
+          <Link
+            href={`/sign-in?next=${next}`}
+            className="text-teal hover:underline"
+          >
             Sign in
           </Link>
         </p>
@@ -102,7 +106,14 @@ async function ApplyPanel({ jobId }: { jobId: string }) {
     );
   }
 
-  return <ApplyForm action={applyToJob} jobListingId={jobId} />;
+  return (
+    <ApplyForm
+      action={applyToJob}
+      jobListingId={jobId}
+      hasResume={Boolean(worker.resumeKey)}
+      hasPhoto={Boolean(worker.photoKey)}
+    />
+  );
 }
 
 export default async function JobDetailPage({
@@ -119,10 +130,19 @@ export default async function JobDetailPage({
         <Link href="/jobs" className="text-sm text-teal hover:underline">
           ← All jobs
         </Link>
-        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-          <div className="grid content-start gap-6">
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="grid content-start gap-6 lg:col-start-1">
+            {job.posterKey ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={posterUrl(job.posterKey)}
+                alt={`${job.roleTitle} job poster`}
+                className="w-full max-w-2xl rounded-lg border border-ink/10 bg-white shadow-sm"
+              />
+            ) : null}
             <div>
               <div className="flex flex-wrap gap-1.5">
+                {job.jobCode ? <Badge tone="amber">{job.jobCode}</Badge> : null}
                 <Badge>{job.sector}</Badge>
                 <Badge tone="teal">{job.passTrackRequired}</Badge>
                 {job.urgency === "Urgent" ? (
@@ -136,6 +156,24 @@ export default async function JobDetailPage({
                 {job.industry} company · {job.location}
               </p>
             </div>
+          </div>
+          <aside
+            id="apply"
+            className="grid scroll-mt-6 content-start gap-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start"
+          >
+            <Card>
+              <h2 className="font-display text-lg font-semibold">Apply</h2>
+              <div className="mt-3">
+                <ApplyPanel jobId={job.id} />
+              </div>
+            </Card>
+            <p className="px-1 text-xs leading-relaxed text-graphite/80">
+              Pinnacle reviews every application and introduces shortlisted
+              candidates to the employer. Workers are never charged a fee to
+              apply.
+            </p>
+          </aside>
+          <div className="grid content-start gap-6 lg:col-start-1">
             <Card>
               <DefinitionList
                 items={[
@@ -161,19 +199,6 @@ export default async function JobDetailPage({
               )}
             </Card>
           </div>
-          <aside className="grid content-start gap-4">
-            <Card>
-              <h2 className="font-display text-lg font-semibold">Apply</h2>
-              <div className="mt-3">
-                <ApplyPanel jobId={job.id} />
-              </div>
-            </Card>
-            <p className="px-1 text-xs leading-relaxed text-graphite/80">
-              Pinnacle reviews every application and introduces shortlisted
-              candidates to the employer. Workers are never charged a fee to
-              apply.
-            </p>
-          </aside>
         </div>
       </Container>
     </main>

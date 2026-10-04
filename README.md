@@ -14,6 +14,48 @@ commission.
 | **Employer**         | Set up a company profile, post/edit/pause/close jobs, see candidates per job (anonymised until Pinnacle introduces them), browse the talent pool and request introductions.                                                                  |
 | **Admin (Pinnacle)** | Pipeline of every application and introduction request, with stage, internal notes and commission tracking. Post jobs on behalf of any client, add client companies that have no login, manage workers' availability and verified pass type. |
 
+### Posters, job codes and short links
+
+On **Admin → Jobs → Post a job** staff can upload the recruitment poster
+(JPG/PNG/WebP, up to 4 MB) and give the job its code (e.g. `PS0015`). Posters
+show on the job board and homepage, and tapping one opens the application.
+Every coded job also has a short link for social posts: `/j/PS0015`. Workers
+can search by code too.
+
+### Applications
+
+Workers apply with a resume/CV and a recent photo (both optional and stored on
+their profile for next time). A visitor who taps a poster and signs up lands back
+on that job's application.
+
+### Matching
+
+`src/lib/matching.ts` scores every worker against every job (trade
+similarity, sector, work-pass eligibility, experience) and always shows the
+reasons. Workers see **Best matches for you** at the top of their job list
+but can still browse everything. On each job's admin page Pinnacle staff see
+**Suggested candidates** and can **Put forward** a worker, which adds them to
+the pipeline. SC/PR-only roles are never suggested to foreign workers.
+
+### Notifications
+
+Email via [Resend](https://resend.com). Staff get an email for every new
+application, introduction request and employer-posted job. Workers get an email
+when their application moves stage, and employers get one when Pinnacle introduces
+a candidate. The pipeline has one-tap WhatsApp links for every worker.
+
+### File storage
+
+Neon is a Postgres database, not file storage, so posters, resumes and photos go
+in an S3-compatible bucket (Cloudflare R2 recommended). Files stay private and
+are served through the app with permission checks:
+
+- Posters are public.
+- A worker's resume/photo can be seen by that worker and Pinnacle staff, and by
+  an employer once Pinnacle has introduced the worker to them.
+
+See the `S3_*` variables in `.env.local.example`.
+
 Introductions move through `Requested → Pinnacle Review → Introduced →
 Interview → Offer → Placed` (or `Declined`). Employers only see a worker's name
 and contact details from **Introduced** onwards. Marking an introduction

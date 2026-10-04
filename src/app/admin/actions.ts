@@ -9,7 +9,9 @@ import { isUuid } from "@/db/queries";
 import { employers, introductions, jobListings, workers } from "@/db/schema";
 import { parseJobForm } from "@/lib/jobs";
 import { JOB_STATUSES } from "@/lib/options";
+import { notifyStageChange } from "@/lib/notify";
 import { requireAdmin } from "@/lib/session";
+import { deleteUpload, hasFile, saveUpload, UploadError } from "@/lib/storage";
 import {
   employerProfileSchema,
   fieldErrors,
@@ -46,18 +48,53 @@ export async function saveAdminJob(
   if (result.error) return result.error;
 
   const id = String(formData.get("id") ?? "");
-  if (id) {
-    if (!isUuid(id)) return { message: "Job not found." };
-    await db
-      .update(jobListings)
-      .set({ ...result.data, employerId })
-      .where(eq(jobListings.id, id));
+  if (id && !isUuid(id)) return { message: "Job not found." };
+  const existing = id
+    ? await db.query.jobListings.findFirst({ where: eq(jobListings.id, id) })
+    : undefined;
+  if (id && !existing) return { message: "Job not found." };
+
+  if (result.data.jobCode) {
+    const clash = await db.query.jobListings.findFirst({
+      columns: { id: true },
+      where: eq(jobListings.jobCode, result.data.jobCode),
+    });
+    if (clash && clash.id !== id) {
+      return {
+        message: "Please fix the highlighted fields.",
+        fieldErrors: { jobCode: "Another job already uses this code" },
+      };
+    }
+  }
+
+  let posterKey = existing?.posterKey ?? null;
+  const poster = formData.get("poster");
+  if (hasFile(poster)) {
+    try {
+      posterKey = await saveUpload(poster, "poster");
+    } catch (error) {
+      if (!(error instanceof UploadError)) throw error;
+      return {
+        message: "Please fix the highlighted fields.",
+        fieldErrors: { poster: error.message },
+      };
+    }
+  } else if (formData.get("removePoster") === "on") {
+    posterKey = null;
+  }
+
+  const values = { ...result.data, employerId, posterKey };
+  if (existing) {
+    await db.update(jobListings).set(values).where(eq(jobListings.id, id));
   } else {
-    await db.insert(jobListings).values({ ...result.data, employerId });
+    await db.insert(jobListings).values(values);
+  }
+  if (existing?.posterKey && existing.posterKey !== posterKey) {
+    await deleteUpload(existing.posterKey);
   }
 
   revalidateEverything();
-  redirect("/admin/jobs");
+  redirect(existing ? `/admin/jobs/${existing.id}` : "/admin/jobs");
 }
 
 export async function setAdminJobStatus(formData: FormData) {
@@ -105,12 +142,25 @@ export async function updateIntroduction(
   }
 
   const { id, ...values } = parsed.data;
+  const before = await db.query.introductions.findFirst({
+    columns: { stage: true },
+    where: eq(introductions.id, id),
+  });
+  if (!before) return { message: "Introduction not found." };
+
   const [updated] = await db
     .update(introductions)
     .set(values)
     .where(eq(introductions.id, id))
     .returning();
   if (!updated) return { message: "Introduction not found." };
+
+  await notifyStageChange({
+    workerId: updated.workerId,
+    jobListingId: updated.jobListingId,
+    from: before.stage,
+    to: updated.stage,
+  });
 
   if (updated.stage === "Placed") {
     await db
@@ -135,4 +185,24 @@ export async function updateWorkerStatus(
   await db.update(workers).set(values).where(eq(workers.id, id));
   revalidateEverything();
   return { ok: true, message: "Saved." };
+}
+
+/** Staff put a worker forward for a job themselves. */
+export async function addToPipeline(formData: FormData) {
+  await requireAdmin();
+  const workerId = String(formData.get("workerId") ?? "");
+  const jobListingId = String(formData.get("jobListingId") ?? "");
+  if (!isUuid(workerId) || !isUuid(jobListingId)) return;
+
+  await db
+    .insert(introductions)
+    .values({
+      workerId,
+      jobListingId,
+      initiatedBy: "pinnacle",
+      stage: "Pinnacle Review",
+    })
+    .onConflictDoNothing();
+
+  revalidateEverything();
 }

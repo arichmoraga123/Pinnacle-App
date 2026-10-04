@@ -4,7 +4,7 @@ import { SignUp } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
-import { isSignupRole, type SignupRole } from "@/lib/auth/roles";
+import { afterAuthUrl, isSignupRole, type SignupRole } from "@/lib/auth/roles";
 
 const ROLE_OPTIONS: Array<{
   role: SignupRole;
@@ -32,7 +32,9 @@ export default function SignUpPage() {
 }
 
 function SignUpFlow() {
-  const requested = useSearchParams().get("role");
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("role");
+  const redirectUrl = afterAuthUrl(searchParams.get("next"));
   const [role, setRole] = useState<SignupRole | null>(
     isSignupRole(requested) ? requested : null,
   );
@@ -81,8 +83,8 @@ function SignUpFlow() {
             Change role
           </button>
           <SignUp
-            forceRedirectUrl="/after-auth"
-            fallbackRedirectUrl="/after-auth"
+            forceRedirectUrl={redirectUrl}
+            fallbackRedirectUrl={redirectUrl}
             signInUrl="/sign-in"
             unsafeMetadata={{ role }}
           />

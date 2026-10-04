@@ -15,6 +15,13 @@
       "when": 1791153312376,
       "tag": "0001_woozy_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791154296234,
+      "tag": "0002_charming_gateway",
+      "breakpoints": true
     }
   ]
 }

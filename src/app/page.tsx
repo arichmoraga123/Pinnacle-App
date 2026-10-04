@@ -26,7 +26,7 @@ const STEPS = [
 ];
 
 export default async function Home() {
-  const jobs = await listPublicJobs({}, 4);
+  const jobs = await listPublicJobs({}, 6);
 
   return (
     <main>
@@ -91,9 +91,9 @@ export default async function Home() {
               View all jobs →
             </Link>
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => (
-              <JobCard key={job.id} job={job} href={`/jobs/${job.id}`} />
+              <JobCard key={job.id} job={job} href={`/jobs/${job.id}#apply`} />
             ))}
           </div>
           {jobs.length === 0 ? (

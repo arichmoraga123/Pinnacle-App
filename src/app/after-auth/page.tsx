@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ensureRoleMetadata } from "@/lib/auth/ensure-role";
-import { getRoleHome, isUserRole } from "@/lib/auth/roles";
+import { getRoleHome, isUserRole, safeNextPath } from "@/lib/auth/roles";
 
 export default function AfterAuthPage() {
   const { isLoaded, userId, getToken } = useAuth();
@@ -45,7 +45,13 @@ export default function AfterAuthPage() {
           ? user?.publicMetadata?.role
           : null) ?? role;
 
-      router.replace(getRoleHome(confirmed));
+      // Workers who signed up from a job poster go straight back to it.
+      const next = safeNextPath(
+        new URLSearchParams(window.location.search).get("next"),
+      );
+      router.replace(
+        next && confirmed === "worker" ? next : getRoleHome(confirmed),
+      );
     }
 
     void finish();

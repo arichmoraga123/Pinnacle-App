@@ -64,12 +64,14 @@ export default async function AdminJobsPage({
                     <tr key={job.id}>
                       <td className="px-4 py-3">
                         <Link
-                          href={`/admin/jobs/${job.id}/edit`}
+                          href={`/admin/jobs/${job.id}`}
                           className="font-semibold hover:text-teal"
                         >
                           {job.roleTitle}
                         </Link>
                         <p className="text-xs text-graphite/70">
+                          {job.jobCode ? `${job.jobCode} · ` : ""}
+                          {job.posterKey ? "Poster · " : ""}
                           {job.sector} · {job.passTrackRequired} ·{" "}
                           {formatDate(job.createdAt)}
                         </p>

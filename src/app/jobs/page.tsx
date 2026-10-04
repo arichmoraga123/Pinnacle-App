@@ -34,9 +34,9 @@ export default async function JobsPage({
             Try a different sector or pass type.
           </EmptyState>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => (
-              <JobCard key={job.id} job={job} href={`/jobs/${job.id}`} />
+              <JobCard key={job.id} job={job} href={`/jobs/${job.id}#apply`} />
             ))}
           </div>
         )}

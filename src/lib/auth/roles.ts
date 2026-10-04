@@ -29,3 +29,17 @@ export function isSignupRole(value: unknown): value is SignupRole {
 export function getRoleHome(role: UserRole): string {
   return ROLE_HOME[role];
 }
+
+/**
+ * Where to send someone after sign-in/up when they started from a job
+ * (e.g. tapped a poster). Only same-site job pages are allowed.
+ */
+export function safeNextPath(value: string | null | undefined) {
+  if (!value || !/^\/jobs\/[0-9a-f-]{36}(#apply)?$/i.test(value)) return null;
+  return value;
+}
+
+export function afterAuthUrl(next: string | null | undefined) {
+  const safe = safeNextPath(next);
+  return safe ? `/after-auth?next=${encodeURIComponent(safe)}` : "/after-auth";
+}

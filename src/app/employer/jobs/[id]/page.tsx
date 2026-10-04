@@ -19,7 +19,7 @@ import {
 import { db } from "@/db";
 import { isUuid } from "@/db/queries";
 import { introductions, jobListings, workers } from "@/db/schema";
-import { formatDate, formatSalary } from "@/lib/format";
+import { formatDate, formatSalary, workerFileUrl } from "@/lib/format";
 import { REVEALED_STAGES } from "@/lib/options";
 import { requireEmployer } from "@/lib/session";
 
@@ -140,9 +140,29 @@ export default async function EmployerJobPage({
                       </div>
                     </div>
                     {revealed ? (
-                      <p className="text-sm text-graphite">
-                        {worker.email ?? "No email"} ·{" "}
-                        {worker.phone ?? "No phone"}
+                      <p className="flex flex-wrap gap-x-3 text-sm text-graphite">
+                        <span>{worker.email ?? "No email"}</span>
+                        <span>{worker.phone ?? "No phone"}</span>
+                        {worker.resumeKey ? (
+                          <a
+                            href={workerFileUrl(worker.id, "resume")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Resume
+                          </a>
+                        ) : null}
+                        {worker.photoKey ? (
+                          <a
+                            href={workerFileUrl(worker.id, "photo")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Photo
+                          </a>
+                        ) : null}
                       </p>
                     ) : null}
                     {worker.summary ? (
@@ -153,7 +173,9 @@ export default async function EmployerJobPage({
                     <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/60">
                       {intro.initiatedBy === "employer"
                         ? "You requested this introduction"
-                        : "Applied"}{" "}
+                        : intro.initiatedBy === "pinnacle"
+                          ? "Recommended by Pinnacle"
+                          : "Applied"}{" "}
                       · {formatDate(intro.createdAt)}
                     </p>
                   </Card>

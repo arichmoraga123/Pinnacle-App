@@ -5,11 +5,13 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { getPublicJob } from "@/db/queries";
-import { introductions, workers } from "@/db/schema";
+import { introductions, workers, type Worker } from "@/db/schema";
 import { initialsFromName } from "@/lib/format";
 import { COUNTRIES } from "@/lib/options";
 import { isWorkerProfileComplete } from "@/lib/profile";
+import { notifyNewApplication } from "@/lib/notify";
 import { requireWorker } from "@/lib/session";
+import { deleteUpload, hasFile, saveUpload, UploadError } from "@/lib/storage";
 import {
   applicationSchema,
   fieldErrors,
@@ -17,6 +19,43 @@ import {
   workerProfileSchema,
   type FormState,
 } from "@/lib/validation";
+
+/**
+ * Store any resume/photo included in the form on the worker's profile,
+ * replacing (and deleting) the previous files.
+ */
+async function saveWorkerFiles(
+  worker: Worker,
+  formData: FormData,
+): Promise<FormState | null> {
+  const updates: Partial<Pick<Worker, "resumeKey" | "photoKey">> = {};
+  const fields = [
+    ["resume", "resumeKey"],
+    ["photo", "photoKey"],
+  ] as const;
+
+  for (const [field, column] of fields) {
+    const file = formData.get(field);
+    if (!hasFile(file)) continue;
+    try {
+      updates[column] = await saveUpload(file, field);
+    } catch (error) {
+      if (!(error instanceof UploadError)) throw error;
+      await Promise.all(Object.values(updates).map((k) => deleteUpload(k)));
+      return {
+        message: "Please fix the highlighted fields.",
+        fieldErrors: { [field]: error.message },
+      };
+    }
+  }
+
+  if (Object.keys(updates).length === 0) return null;
+  await db.update(workers).set(updates).where(eq(workers.id, worker.id));
+  for (const [, column] of fields) {
+    if (updates[column] && worker[column]) await deleteUpload(worker[column]);
+  }
+  return null;
+}
 
 export async function saveWorkerProfile(
   _prev: FormState,
@@ -30,6 +69,9 @@ export async function saveWorkerProfile(
       fieldErrors: fieldErrors(parsed.error),
     };
   }
+
+  const fileError = await saveWorkerFiles(worker, formData);
+  if (fileError) return fileError;
 
   const data = parsed.data;
   const country = COUNTRIES.find((c) => c.code === data.originCountryCode)!;
@@ -78,6 +120,9 @@ export async function applyToJob(
     return { message: "This job is no longer accepting applications." };
   }
 
+  const fileError = await saveWorkerFiles(worker, formData);
+  if (fileError) return fileError;
+
   const inserted = await db
     .insert(introductions)
     .values({
@@ -92,6 +137,12 @@ export async function applyToJob(
   if (inserted.length === 0) {
     return { message: "You have already applied for this job." };
   }
+
+  await notifyNewApplication({
+    workerId: worker.id,
+    jobListingId: job.id,
+    message: parsed.data.message,
+  });
 
   revalidatePath(`/jobs/${job.id}`);
   revalidatePath("/worker", "layout");

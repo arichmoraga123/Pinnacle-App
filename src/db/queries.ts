@@ -40,6 +40,7 @@ function jobFilterConditions(filters: JobFilters): SQL[] {
     conditions.push(
       or(
         ilike(jobListings.roleTitle, pattern),
+        ilike(jobListings.jobCode, pattern),
         ilike(jobListings.description, pattern),
         ilike(jobListings.location, pattern),
       )!,
@@ -55,6 +56,8 @@ function jobFilterConditions(filters: JobFilters): SQL[] {
 const publicJobColumns = {
   id: jobListings.id,
   roleTitle: jobListings.roleTitle,
+  jobCode: jobListings.jobCode,
+  posterKey: jobListings.posterKey,
   description: jobListings.description,
   location: jobListings.location,
   sector: jobListings.sector,
@@ -97,6 +100,21 @@ export async function getPublicJob(id: string) {
     .from(jobListings)
     .innerJoin(employers, eq(jobListings.employerId, employers.id))
     .where(and(eq(jobListings.id, id), eq(jobListings.status, "Active")))
+    .limit(1);
+  return job ?? null;
+}
+
+/** Resolve a poster's job code (e.g. "PS0015") to an active listing. */
+export async function getPublicJobByCode(code: string) {
+  const [job] = await db
+    .select({ id: jobListings.id })
+    .from(jobListings)
+    .where(
+      and(
+        eq(jobListings.jobCode, code.trim().toUpperCase()),
+        eq(jobListings.status, "Active"),
+      ),
+    )
     .limit(1);
   return job ?? null;
 }

@@ -8,7 +8,7 @@ import { JobFilters, pickFilters } from "@/components/job-filters";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { db } from "@/db";
 import { workers } from "@/db/schema";
-import { formatDate } from "@/lib/format";
+import { formatDate, whatsappUrl, workerFileUrl } from "@/lib/format";
 import {
   PASS_TRACKS,
   SECTORS,
@@ -67,7 +67,11 @@ export default async function AdminWorkersPage({
           title="Workers"
           description="Full candidate details. Update availability and verify each worker's pass track after review."
         />
-        <JobFilters action="/admin/workers" values={filters} />
+        <JobFilters
+          action="/admin/workers"
+          values={filters}
+          placeholder="Search name, trade or email…"
+        />
         {rows.length === 0 ? (
           <EmptyState title="No workers found" />
         ) : (
@@ -107,6 +111,38 @@ export default async function AdminWorkersPage({
                         <span className="text-graphite/60">no email</span>
                       )}
                       <p className="text-graphite">{w.phone ?? ""}</p>
+                      <p className="mt-1 flex flex-wrap gap-x-2">
+                        {whatsappUrl(w.phone) ? (
+                          <a
+                            href={whatsappUrl(w.phone)!}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            WhatsApp
+                          </a>
+                        ) : null}
+                        {w.resumeKey ? (
+                          <a
+                            href={workerFileUrl(w.id, "resume")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Resume
+                          </a>
+                        ) : null}
+                        {w.photoKey ? (
+                          <a
+                            href={workerFileUrl(w.id, "photo")}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-teal hover:underline"
+                          >
+                            Photo
+                          </a>
+                        ) : null}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <p>{w.roleTitle}</p>

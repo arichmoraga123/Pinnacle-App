@@ -19,6 +19,9 @@ export const sectorEnum = pgEnum("sector", [
   "Facilities",
   "Trades",
   "Healthcare",
+  "Beauty & Wellness",
+  "Food & Beverage",
+  "Retail",
 ]);
 
 export const passTrackEnum = pgEnum("pass_track", [
@@ -26,6 +29,7 @@ export const passTrackEnum = pgEnum("pass_track", [
   "S Pass Eligible",
   "Work Permit",
   "In Verification",
+  "Singaporean / PR",
 ]);
 
 export const workerStatusEnum = pgEnum("worker_status", [
@@ -50,6 +54,7 @@ export const jobStatusEnum = pgEnum("job_status", [
 export const introductionInitiatorEnum = pgEnum("introduction_initiator", [
   "employer",
   "worker",
+  "pinnacle",
 ]);
 
 export const introductionStageEnum = pgEnum("introduction_stage", [
@@ -117,6 +122,9 @@ export const workers = pgTable(
     email: text("email"),
     phone: text("phone"),
     summary: text("summary"),
+    // Object storage keys (see src/lib/storage.ts).
+    resumeKey: text("resume_key"),
+    photoKey: text("photo_key"),
     clerkUserId: text("clerk_user_id").unique(),
     ...timestamps,
   },
@@ -145,12 +153,17 @@ export const jobListings = pgTable(
       .notNull()
       .references(() => employers.id, { onDelete: "cascade" }),
     roleTitle: text("role_title").notNull(),
+    // Pinnacle's reference code, e.g. "PS0015", as printed on the poster.
+    jobCode: varchar("job_code", { length: 20 }).unique(),
+    // Object storage key of the recruitment poster image.
+    posterKey: text("poster_key"),
     description: text("description").default("").notNull(),
     location: text("location").default("Singapore").notNull(),
     sector: sectorEnum("sector").notNull(),
     passTrackRequired: passTrackEnum("pass_track_required").notNull(),
-    salaryRangeMin: integer("salary_range_min").notNull(),
-    salaryRangeMax: integer("salary_range_max").notNull(),
+    // Null when the poster just says "attractive salary package".
+    salaryRangeMin: integer("salary_range_min"),
+    salaryRangeMax: integer("salary_range_max"),
     currency: varchar("currency", { length: 3 }).default("SGD").notNull(),
     headcount: integer("headcount").default(1).notNull(),
     urgency: jobUrgencyEnum("urgency").default("Open").notNull(),

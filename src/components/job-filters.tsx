@@ -9,10 +9,12 @@ export function JobFilters({
   action,
   values,
   showSearch = true,
+  placeholder = "Search role, location or job code…",
 }: {
   action: string;
   values: { q?: string; sector?: string; passTrack?: string };
   showSearch?: boolean;
+  placeholder?: string;
 }) {
   return (
     <form
@@ -24,7 +26,7 @@ export function JobFilters({
           type="search"
           name="q"
           defaultValue={values.q ?? ""}
-          placeholder="Search role, location…"
+          placeholder={placeholder}
           aria-label="Search"
           className={`${selectClass} sm:min-w-64 sm:flex-1`}
         />

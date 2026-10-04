@@ -9,6 +9,7 @@ import { isUuid } from "@/db/queries";
 import { employers, introductions, jobListings, workers } from "@/db/schema";
 import { parseJobForm } from "@/lib/jobs";
 import { JOB_STATUSES } from "@/lib/options";
+import { notifyIntroductionRequested, notifyJobPosted } from "@/lib/notify";
 import { isEmployerProfileComplete } from "@/lib/profile";
 import { requireEmployer } from "@/lib/session";
 import {
@@ -51,6 +52,8 @@ export async function saveEmployerJob(
 
   const result = parseJobForm(formData);
   if (result.error) return result.error;
+  // Job codes are Pinnacle's own references; only staff set them.
+  const values = { ...result.data, jobCode: undefined };
 
   const id = String(formData.get("id") ?? "");
   let jobId: string;
@@ -59,7 +62,7 @@ export async function saveEmployerJob(
     if (!isUuid(id)) return { message: "Job not found." };
     const updated = await db
       .update(jobListings)
-      .set(result.data)
+      .set(values)
       .where(
         and(eq(jobListings.id, id), eq(jobListings.employerId, employer.id)),
       )
@@ -69,9 +72,10 @@ export async function saveEmployerJob(
   } else {
     const [created] = await db
       .insert(jobListings)
-      .values({ ...result.data, employerId: employer.id })
+      .values({ ...values, employerId: employer.id })
       .returning({ id: jobListings.id });
     jobId = created.id;
+    await notifyJobPosted(jobId);
   }
 
   revalidatePath("/employer", "layout");
@@ -153,6 +157,12 @@ export async function requestIntroduction(
       .set({ status: "Introduction Requested" })
       .where(eq(workers.id, workerId));
   }
+
+  await notifyIntroductionRequested({
+    workerId,
+    jobListingId,
+    message: message || null,
+  });
 
   revalidatePath("/employer", "layout");
   return {
