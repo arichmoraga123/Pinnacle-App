@@ -30,7 +30,7 @@ export function JobCard({
             src={posterUrl(job.posterKey)}
             alt={`${job.roleTitle} job poster`}
             loading="lazy"
-            className="aspect-[4/5] w-full object-cover object-top transition group-hover:opacity-95"
+            className="aspect-[4/5] w-full object-contain transition group-hover:opacity-95"
           />
           {aside ? (
             <div className="absolute right-2 top-2 flex gap-1.5 rounded bg-white/90 p-1">
