@@ -8,6 +8,13 @@
       "when": 1784966603407,
       "tag": "0000_wise_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791153312376,
+      "tag": "0001_woozy_silvermane",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { SignUp } from "@clerk/nextjs";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
-import type { SignupRole } from "@/lib/auth/roles";
+import { isSignupRole, type SignupRole } from "@/lib/auth/roles";
 
 const ROLE_OPTIONS: Array<{
   role: SignupRole;
@@ -23,10 +24,21 @@ const ROLE_OPTIONS: Array<{
 ];
 
 export default function SignUpPage() {
-  const [role, setRole] = useState<SignupRole | null>(null);
+  return (
+    <Suspense>
+      <SignUpFlow />
+    </Suspense>
+  );
+}
+
+function SignUpFlow() {
+  const requested = useSearchParams().get("role");
+  const [role, setRole] = useState<SignupRole | null>(
+    isSignupRole(requested) ? requested : null,
+  );
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-4 py-12">
+    <main className="flex flex-1 flex-col items-center justify-center gap-8 bg-paper px-4 py-12">
       <div className="w-full max-w-md text-center">
         <p className="font-mono text-xs uppercase tracking-widest text-teal">
           Create account

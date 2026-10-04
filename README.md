@@ -1,7 +1,34 @@
 # Pinnacle
 
-Next.js 14 (App Router) + TypeScript scaffold styled with Tailwind CSS, using
-Drizzle ORM against Neon's serverless Postgres driver.
+Pinnacle is a placement agency's website. Singapore employers post jobs,
+foreign workers apply online, and Pinnacle staff sit in the middle. They
+screen candidates, make introductions, and track each placement and its
+commission.
+
+## How it works
+
+| Who                  | What they can do                                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Public**           | Browse open jobs at `/jobs` (company names are hidden; only the industry is shown).                                                                                                                                                          |
+| **Worker**           | Build a profile, apply to jobs with a message, track each application's stage, withdraw before review.                                                                                                                                       |
+| **Employer**         | Set up a company profile, post/edit/pause/close jobs, see candidates per job (anonymised until Pinnacle introduces them), browse the talent pool and request introductions.                                                                  |
+| **Admin (Pinnacle)** | Pipeline of every application and introduction request, with stage, internal notes and commission tracking. Post jobs on behalf of any client, add client companies that have no login, manage workers' availability and verified pass type. |
+
+Introductions move through `Requested → Pinnacle Review → Introduced →
+Interview → Offer → Placed` (or `Declined`). Employers only see a worker's name
+and contact details from **Introduced** onwards. Marking an introduction
+**Placed** marks the worker as placed.
+
+### Making someone an admin
+
+Admins can't sign themselves up. Have the person create an account at
+`/sign-up` (either role works), then run:
+
+```bash
+npm run make-admin -- their@email.com
+```
+
+They sign out and back in, and they land on `/admin/pipeline`.
 
 ## Stack
 
@@ -9,7 +36,8 @@ Drizzle ORM against Neon's serverless Postgres driver.
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS with custom color tokens
 - **Database:** Drizzle ORM + `@neondatabase/serverless` (`drizzle-orm/neon-http`)
-- **Auth (planned):** Clerk
+- **Auth:** Clerk (roles stored in `publicMetadata.role`)
+- **Validation:** Zod
 - **Tooling:** ESLint + Prettier
 
 ## Getting started
@@ -26,9 +54,18 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Fill in `DATABASE_URL`, `CLERK_PUBLISHABLE_KEY`, and `CLERK_SECRET_KEY`.
+Fill in `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
+and `CLERK_WEBHOOK_SIGNING_SECRET`. Also follow the session-token note at the
+bottom of `.env.local.example`.
 
-3. Run the dev server:
+3. Create the tables (and optionally load demo data):
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+4. Run the dev server:
 
 ```bash
 npm run dev
@@ -40,10 +77,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 src/
-  app/          # App Router routes, layout, and global styles
-  components/   # Shared UI components
-  db/           # Drizzle client (index.ts) and schema (schema.ts)
-  lib/          # Utilities (cn, etc.)
+  app/
+    page.tsx      # Landing page
+    jobs/         # Public job board + job detail / apply
+    worker/       # Worker: browse, applications, profile (+ actions.ts)
+    employer/     # Employer: jobs, candidates, talent browse, company (+ actions.ts)
+    admin/        # Pinnacle staff: pipeline, jobs, employers, workers (+ actions.ts)
+  components/     # Shared UI (header, cards, forms)
+  db/             # Drizzle client, schema, shared queries, seed
+  lib/            # Auth/session helpers, validation, formatting, options
+scripts/          # make-admin
+drizzle/          # SQL migrations
 drizzle.config.ts
 tailwind.config.ts
 ```

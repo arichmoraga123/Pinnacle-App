@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+
+import { SiteHeader } from "@/components/site-header";
+
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -24,8 +27,12 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pinnacle",
-  description: "Pinnacle",
+  title: {
+    default: "Pinnacle — Work placements in Singapore",
+    template: "%s · Pinnacle",
+  },
+  description:
+    "Pinnacle connects Singapore employers with vetted foreign workers and manages every introduction, from application to placement.",
 };
 
 export default function RootLayout({
@@ -37,9 +44,10 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} bg-paper font-sans text-ink antialiased`}
+          className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} flex min-h-screen flex-col bg-paper font-sans text-ink antialiased`}
         >
-          {children}
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">{children}</div>
         </body>
       </html>
     </ClerkProvider>

@@ -5,25 +5,23 @@ import { type NextRequest } from "next/server";
 
 import { db } from "@/db";
 import { admins, employers, workers } from "@/db/schema";
+import { isSignupRole, isUserRole, type UserRole } from "@/lib/auth/roles";
+import { initialsFromName } from "@/lib/format";
 import {
-  isSignupRole,
-  isUserRole,
-  type UserRole,
-} from "@/lib/auth/roles";
-
-function initialsFromName(fullName: string) {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "NA";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
+  PENDING_COMPANY,
+  PENDING_COUNTRY,
+  PENDING_ROLE_TITLE,
+} from "@/lib/profile";
 
 function displayName(data: {
   first_name: string | null;
   last_name: string | null;
   username: string | null;
 }) {
-  const name = [data.first_name, data.last_name].filter(Boolean).join(" ").trim();
+  const name = [data.first_name, data.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
   return name || data.username || "New User";
 }
 
@@ -68,7 +66,7 @@ async function ensureProfileRow(
 
     await db.insert(employers).values({
       clerkUserId,
-      companyName: "Company pending",
+      companyName: PENDING_COMPANY,
       industry: "Pending",
       contactName: name,
       contactEmail: email || "pending@example.com",
@@ -86,9 +84,10 @@ async function ensureProfileRow(
       clerkUserId,
       fullName: name,
       initials: initialsFromName(name),
-      roleTitle: "Profile pending",
+      email: email || null,
+      roleTitle: PENDING_ROLE_TITLE,
       sector: "Construction",
-      originCountry: "Pending",
+      originCountry: PENDING_COUNTRY,
       originCountryCode: "XXX",
       yearsExperience: 0,
       passTrack: "In Verification",

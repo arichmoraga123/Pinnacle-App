@@ -13,9 +13,11 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "make-admin": "tsx scripts/make-admin.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^2.33.6",
     "@clerk/nextjs": "^6.39.6",
     "@neondatabase/serverless": "^1.1.0",
     "clsx": "^2.1.1",
@@ -23,7 +25,9 @@
     "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
-    "tailwind-merge": "^3.6.0"
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^20",

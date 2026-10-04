@@ -114,6 +114,9 @@ export const workers = pgTable(
     yearsExperience: integer("years_experience").notNull(),
     passTrack: passTrackEnum("pass_track").notNull(),
     status: workerStatusEnum("status").default("Available").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    summary: text("summary"),
     clerkUserId: text("clerk_user_id").unique(),
     ...timestamps,
   },
@@ -129,7 +132,8 @@ export const employers = pgTable("employers", {
   industry: text("industry").notNull(),
   contactName: text("contact_name").notNull(),
   contactEmail: text("contact_email").notNull(),
-  clerkUserId: text("clerk_user_id").notNull().unique(),
+  // Null for client companies Pinnacle staff manage without a login.
+  clerkUserId: text("clerk_user_id").unique(),
   ...timestamps,
 });
 
@@ -141,6 +145,8 @@ export const jobListings = pgTable(
       .notNull()
       .references(() => employers.id, { onDelete: "cascade" }),
     roleTitle: text("role_title").notNull(),
+    description: text("description").default("").notNull(),
+    location: text("location").default("Singapore").notNull(),
     sector: sectorEnum("sector").notNull(),
     passTrackRequired: passTrackEnum("pass_track_required").notNull(),
     salaryRangeMin: integer("salary_range_min").notNull(),
@@ -169,6 +175,7 @@ export const introductions = pgTable(
       .references(() => jobListings.id, { onDelete: "cascade" }),
     initiatedBy: introductionInitiatorEnum("initiated_by").notNull(),
     stage: introductionStageEnum("stage").default("Requested").notNull(),
+    applicantMessage: text("applicant_message"),
     commissionAmount: numeric("commission_amount", {
       precision: 12,
       scale: 2,
@@ -230,40 +237,31 @@ export const employersRelations = relations(employers, ({ many }) => ({
   jobListings: many(jobListings),
 }));
 
-export const jobListingsRelations = relations(
-  jobListings,
-  ({ one, many }) => ({
-    employer: one(employers, {
-      fields: [jobListings.employerId],
-      references: [employers.id],
-    }),
-    introductions: many(introductions),
+export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
+  employer: one(employers, {
+    fields: [jobListings.employerId],
+    references: [employers.id],
   }),
-);
+  introductions: many(introductions),
+}));
 
-export const introductionsRelations = relations(
-  introductions,
-  ({ one }) => ({
-    worker: one(workers, {
-      fields: [introductions.workerId],
-      references: [workers.id],
-    }),
-    jobListing: one(jobListings, {
-      fields: [introductions.jobListingId],
-      references: [jobListings.id],
-    }),
+export const introductionsRelations = relations(introductions, ({ one }) => ({
+  worker: one(workers, {
+    fields: [introductions.workerId],
+    references: [workers.id],
   }),
-);
+  jobListing: one(jobListings, {
+    fields: [introductions.jobListingId],
+    references: [jobListings.id],
+  }),
+}));
 
-export const passDocumentsRelations = relations(
-  passDocuments,
-  ({ one }) => ({
-    worker: one(workers, {
-      fields: [passDocuments.workerId],
-      references: [workers.id],
-    }),
+export const passDocumentsRelations = relations(passDocuments, ({ one }) => ({
+  worker: one(workers, {
+    fields: [passDocuments.workerId],
+    references: [workers.id],
   }),
-);
+}));
 
 export type Worker = typeof workers.$inferSelect;
 export type NewWorker = typeof workers.$inferInsert;

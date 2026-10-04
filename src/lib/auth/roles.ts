@@ -7,7 +7,7 @@ export const SIGNUP_ROLES = ["employer", "worker"] as const;
 export type SignupRole = (typeof SIGNUP_ROLES)[number];
 
 export const ROLE_HOME: Record<UserRole, string> = {
-  employer: "/employer/browse",
+  employer: "/employer/jobs",
   worker: "/worker/browse",
   admin: "/admin/pipeline",
 };

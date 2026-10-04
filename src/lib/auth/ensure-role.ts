@@ -2,11 +2,7 @@
 
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 
-import {
-  isSignupRole,
-  isUserRole,
-  type UserRole,
-} from "@/lib/auth/roles";
+import { isSignupRole, isUserRole, type UserRole } from "@/lib/auth/roles";
 
 export async function ensureRoleMetadata(): Promise<UserRole | null> {
   const { userId } = await auth();

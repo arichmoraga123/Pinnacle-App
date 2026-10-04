@@ -56,7 +56,7 @@ export default function AfterAuthPage() {
   }, [getToken, isLoaded, isUserLoaded, router, user, userId]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-paper px-4">
+    <main className="flex flex-1 flex-col items-center justify-center gap-3 bg-paper px-4">
       <h1 className="font-display text-2xl font-bold text-ink">Pinnacle</h1>
       <p className="max-w-md text-center text-sm text-graphite">{message}</p>
     </main>
